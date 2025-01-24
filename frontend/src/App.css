@@ -1,0 +1,14 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* You can add any custom CSS below these directives */
+
+/* For example, if you want to add custom styles: */
+@layer components {
+  /* Your custom component styles can go here */
+}
+
+@layer utilities {
+  /* Your custom utility classes can go here */
+}

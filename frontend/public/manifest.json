@@ -1,0 +1,16 @@
+{
+    "manifest_version": 3,
+    "name": "Passecure:secure passwords",
+    "version": "1.0",
+    "description": "protect against password leaks",
+    "permissions": ["storage", "alarms","scripting"],
+    "host_permissions": ["<all_urls>"],
+    "action": {
+      "default_popup": "index.html",
+      "default_width": "400",
+      "default_height": "500",
+      "default_icon": {
+          "1": "icon1.png"
+        }
+      }
+  }
