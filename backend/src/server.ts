@@ -8,7 +8,7 @@ app.use(express.json()); // Parse JSON body
 // Example list of breached passwords
 const breachedPasswords = ['123456', 'password', '123456789'];
 
-app.post('/api/check-password', (req: Request, res: Response) => {
+app.post('/api/check-password',async(req: Request, res: Response):Promise<any> => {
   const { password } = req.body;
 
   // Check if password is provided
