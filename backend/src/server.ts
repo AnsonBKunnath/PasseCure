@@ -1,17 +1,37 @@
-import express, { Request, Response } from 'express';
+import crypto from 'crypto';
+import axios from 'axios';
+import express from 'express';
 import cors from 'cors';
+import { Request, Response } from 'express';
 
 const app = express();
-app.use(cors()); // Enable CORS
-app.use(express.json()); // Parse JSON body
+app.use(cors());
+app.use(express.json());
 
-// Example list of breached passwords
-const breachedPasswords = ['123456', 'password', '123456789'];
+async function getHashCount(hash: string): Promise<number> {
+  const prefix = hash.substring(0, 5);
+  const suffix = hash.substring(5).toUpperCase();
 
-app.post('/api/check-password',async(req: Request, res: Response):Promise<any> => {
+  try {
+    const response = await axios.get(`https://api.pwnedpasswords.com/range/${prefix}`);
+    const hashes = response.data.split('\n');
+
+    for (const hashLine of hashes) {
+      const [hashSuffix, count] = hashLine.split(':');
+      if (hashSuffix.trim() === suffix) {
+        return parseInt(count);
+      }
+    }
+    return 0;
+  } catch (error) {
+    console.error('Error checking password:', error);
+    return 0;
+  }
+}
+
+app.post('/api/check-password', async (req: Request, res: Response): Promise<any> => {
   const { password } = req.body;
 
-  // Check if password is provided
   if (!password) {
     return res.status(400).json({
       breached: false,
@@ -20,23 +40,27 @@ app.post('/api/check-password',async(req: Request, res: Response):Promise<any> =
     });
   }
 
-  // Check if the password is in the breached passwords list
-  const isBreached = breachedPasswords.includes(password);
+  // Creating password hash
+  const hash = crypto
+    .createHash('sha1')
+    .update(password)
+    .digest('hex')
+    .toUpperCase();
 
-  // Construct response
+  // breach count edukkan
+  const breachCount = await getHashCount(hash);
   const response = {
-    breached: isBreached,
-    count: isBreached ? 1 : 0, // Simulated breach count
-    message: isBreached
-      ? 'The password has been found in previous data breaches.'
-      : 'The password is secure.',
+    breached: breachCount > 0,
+    count: breachCount,
+    message: breachCount > 0
+      ? `This password has been seen ${breachCount} times in data breaches.`
+      : 'This password hasn\'t been found in any known data breaches.',
   };
 
-  // Send response to frontend
   res.json(response);
+  console.log('Response:', response);
 });
 
-// Start the server
 const PORT = 3000;
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
