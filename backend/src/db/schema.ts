@@ -1,8 +1,8 @@
 import { pgTable, integer, varchar } from "drizzle-orm/pg-core";
 
-export const users = pgTable('users', {
+export const list = pgTable('securelist', {
   id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
   name: varchar('name'),
-  encrypass: varchar('encrypass'),
+  encrypwd: varchar('encrypwd'),
 });
         

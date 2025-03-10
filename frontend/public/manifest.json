@@ -3,7 +3,12 @@
     "name": "Passecure:secure passwords",
     "version": "1.0",
     "description": "protect against password leaks",
-    "permissions": ["storage", "alarms","scripting"],
+    "permissions": [
+        "storage", 
+        "activeTab",
+        "tabs",
+        "scripting"
+    ],
     "host_permissions": ["<all_urls>"],
     "action": {
       "default_popup": "index.html",
@@ -12,5 +17,5 @@
       "default_icon": {
           "1": "icon1.png"
         }
-      }
-  }
+    }
+}

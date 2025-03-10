@@ -3,7 +3,7 @@ import axios from 'axios';
 import express from 'express';
 import cors from 'cors';
 import { Request, Response } from 'express';
-import { createUser } from './db/index';
+import { AddPassword, GetPasswords,DeletePassword} from './db/index';
 import 'dotenv/config';
 
 const app = express();
@@ -111,20 +111,47 @@ app.post('/api/register', async (req: Request, res: Response): Promise<any> => {
 
   try {
     const encryptedPassword = encrypt(password);
-    await createUser({ name, encrypass: encryptedPassword });
+    await AddPassword({ 
+      name, 
+      encrypwd: encryptedPassword  // Updated to match schema
+    });
     
     res.json({
       success: true,
-      message: 'password added successfully',
+      message: 'Password added successfully',
     });
   } catch (error) {
-    console.error('Error registering user:', error);
+    console.error('Error adding password:', error);
     res.status(500).json({
       success: false,
-      message: 'Error registering user',
+      message: 'Error adding password',
     });
   }
 });
+
+app.get('/api/passwords', async (_req: Request, res: Response) => {
+  try {
+    const passwords = await GetPasswords(decrypt);
+    res.json(passwords);
+  } catch (error) {
+    res.status(500).json({ message: 'Error fetching passwords' });
+  }
+});
+
+app.delete('/api/passwords/:id', async (req: Request, res: Response) => {
+  const { id } = req.params;
+  try {
+    const success = await DeletePassword(parseInt(id));
+    if (success) {
+      res.json({ success: true, message: 'Password deleted successfully' });
+    } else {
+      res.status(404).json({ success: false, message: 'Password not found' });
+    }
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Error deleting password' });
+  }
+});
+
 
 const PORT = 3000;
 app.listen(PORT, () => {
