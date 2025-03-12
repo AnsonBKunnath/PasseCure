@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import PasswordStrengthMeter from './components/PasswordStrengthMeter';
+import MasterPasswordAuth from './components/MasterPasswordAuth';
 import Draggable from 'react-draggable';
 const DraggableComponent = Draggable as any;
 
@@ -22,6 +23,8 @@ const PasswordSecurityApp = () => {
   } | null>(null);
   const [showPasswords, setShowPasswords] = useState(false);
   const [savedPasswords, setSavedPasswords] = useState<SavedPassword[]>([]);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [passwordStrength, setPasswordStrength] = useState(0);
 
   const handleRegister = async () => {
     try {
@@ -70,14 +73,16 @@ const PasswordSecurityApp = () => {
   };
 
   useEffect(() => {
-    sendCurrentUrl();
-    chrome.tabs.onActivated.addListener(sendCurrentUrl);
-    (chrome.tabs as any).onUpdated.addListener(sendCurrentUrl);
-    return () => {
-      chrome.tabs.onActivated.removeListener(sendCurrentUrl);
-      (chrome.tabs as any).onUpdated.removeListener(sendCurrentUrl);
-    };
-  }, []);
+    if (isAuthenticated) {
+      sendCurrentUrl();
+      chrome.tabs.onActivated.addListener(sendCurrentUrl);
+      (chrome.tabs as any).onUpdated.addListener(sendCurrentUrl);
+      return () => {
+        chrome.tabs.onActivated.removeListener(sendCurrentUrl);
+        (chrome.tabs as any).onUpdated.removeListener(sendCurrentUrl);
+      };
+    }
+  }, [isAuthenticated]);
 
   const fetchPasswords = async () => {
     try {
@@ -102,11 +107,34 @@ const PasswordSecurityApp = () => {
   };
 
   useEffect(() => {
-    if (showPasswords) fetchPasswords();
-  }, [showPasswords]);
+    if (showPasswords && isAuthenticated) fetchPasswords();
+  }, [showPasswords, isAuthenticated]);
+
+  // Handle authentication
+  const handleAuthenticate = () => {
+    setIsAuthenticated(true);
+  };
+
+  // If not authenticated, show the master password screen
+  if (!isAuthenticated) {
+    return <MasterPasswordAuth onAuthenticate={handleAuthenticate} />;
+  }
+
+  // Get breach message based on password strength and breach status
+  const getBreachMessage = () => {
+    if (!breachResult) return null;
+    
+    if (breachResult.breached) {
+      return 'PASSWORD HAS BEEN BREACHED!';
+    } else if (passwordStrength === 5) {
+      return 'Password has not been found in any breaches';
+    } else {
+      return 'Password has not been breached but is still insecure';
+    }
+  };
 
   return (
-    <div className="w-[400px] min-h-[500px] bg-black text-white flex flex-col items-center justify-center p-6">
+    <div className="w-[400px] h-[600px] bg-black text-white flex flex-col items-center p-6 overflow-y-auto">
       <h1 className="text-2xl font-bold mb-8">PASSECURE</h1>
       <DraggableComponent>
         <div className="cursor-move">
@@ -123,7 +151,10 @@ const PasswordSecurityApp = () => {
             onChange={(e) => setPassword(e.target.value)}
             className="w-full bg-transparent border border-white/20 rounded px-4 py-2 text-white placeholder-white/50 focus:outline-none focus:border-white/40"
           />
-          <PasswordStrengthMeter password={password} />
+          <PasswordStrengthMeter 
+            password={password} 
+            onStrengthChange={setPasswordStrength}
+          />
         </div>
 
         <button
@@ -136,8 +167,8 @@ const PasswordSecurityApp = () => {
         </button>
 
         {breachResult && (
-          <div className={`text-center ${breachResult.breached ? 'text-red-500' : 'text-green-500'} font-medium`}>
-            {breachResult.breached ? 'PASSWORD HAS BEEN BREACHED!' : 'Password has not been found in any breaches'}
+          <div className={`text-center ${breachResult.breached ? 'text-red-500' : (passwordStrength === 5 ? 'text-green-500' : 'text-yellow-500')} font-medium`}>
+            {getBreachMessage()}
             {breachResult.count > 0 && (
               <div className="text-sm mt-1">Found in {breachResult.count.toLocaleString()} data breaches</div>
             )}
@@ -189,14 +220,14 @@ const PasswordSecurityApp = () => {
       </div>
 
       {showPasswords && (
-        <div className="w-full mt-8">
+        <div className="w-full mt-8 mb-4 max-h-[300px] overflow-y-auto">
           {savedPasswords.map((p) => (
-            <div key={p.id} className="flex items-center justify-between bg-white/10 rounded p-2">
-              <div>
-                <div className="text-sm font-medium">{p.name}</div>
-                <div className="text-xs">{p.password}</div>
+            <div key={p.id} className="flex items-center justify-between bg-white/10 rounded p-2 mb-2">
+              <div className="overflow-hidden">
+                <div className="text-sm font-medium truncate">{p.name}</div>
+                <div className="text-xs truncate">{p.password}</div>
               </div>
-              <button onClick={() => deletePassword(p.id)} className="text-red-500 text-sm">Delete</button>
+              <button onClick={() => deletePassword(p.id)} className="text-red-500 text-sm ml-2 flex-shrink-0">Delete</button>
             </div>
           ))}
         </div>

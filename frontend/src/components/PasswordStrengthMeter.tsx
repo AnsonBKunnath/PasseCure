@@ -1,8 +1,9 @@
 interface PasswordStrengthMeterProps {
   password: string;
+  onStrengthChange?: (score: number) => void;
 }
 
-const PasswordStrengthMeter: React.FC<PasswordStrengthMeterProps> = ({ password }) => {
+const PasswordStrengthMeter: React.FC<PasswordStrengthMeterProps> = ({ password, onStrengthChange }) => {
   const calculateStrength = (): { score: number; feedback: string[] } => {
     const checks = {
       length: password.length >= 8,
@@ -28,6 +29,11 @@ const PasswordStrengthMeter: React.FC<PasswordStrengthMeterProps> = ({ password 
 
   const { score, feedback } = calculateStrength();
   const percentage = (score / 5) * 100;
+
+  // Call the callback with the current strength score
+  if (onStrengthChange) {
+    onStrengthChange(score);
+  }
 
   const getColorClass = () => {
     if (percentage <= 20) return 'bg-red-500';
